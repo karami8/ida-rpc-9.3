@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release64|x64">
+      <Configuration>Release64</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{60916877-60AB-4565-93BC-2D6097976D86}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>SigMaker</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v145</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'">
+    <IdaSdkDir Condition="'$(IDA_SDK_DIR)'!='' and Exists('$(IDA_SDK_DIR)\src\include\ida.hpp')">$(IDA_SDK_DIR)\src</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and '$(IDA_SDK_DIR)'!=''">$(IDA_SDK_DIR)</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and Exists('$(SolutionDir)..\ida-sdk\src\include\ida.hpp')">$(SolutionDir)..\ida-sdk\src</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and Exists('$(SolutionDir)idasdk93\src\include\ida.hpp')">$(SolutionDir)idasdk93\src</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and Exists('$(SolutionDir)idasdk93\include\ida.hpp')">$(SolutionDir)idasdk93</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and Exists('$(SolutionDir)ida-rpc\idasdk93\src\include\ida.hpp')">$(SolutionDir)ida-rpc\idasdk93\src</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and Exists('$(SolutionDir)ida-rpc\idasdk93\include\ida.hpp')">$(SolutionDir)ida-rpc\idasdk93</IdaSdkDir>
+    <IdaSdkDir Condition="'$(IdaSdkDir)'=='' and Exists('$(SolutionDir)ida-rpc\idasdk90\include\ida.hpp')">$(SolutionDir)ida-rpc\idasdk90</IdaSdkDir>
+    <IdaSdkLibDir Condition="Exists('$(IdaSdkDir)\lib\x64_win_64\ida.lib')">$(IdaSdkDir)\lib\x64_win_64</IdaSdkLibDir>
+    <IdaSdkLibDir Condition="'$(IdaSdkLibDir)'=='' and Exists('$(IdaSdkDir)\lib\x64_win_vc_64\ida.lib')">$(IdaSdkDir)\lib\x64_win_vc_64</IdaSdkLibDir>
+    <GenerateManifest>false</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+    <TargetName>$(ProjectName)64</TargetName>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\linker\</IntDir>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release64|x64'">
+    <ClCompile>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;__EA64__;_Release64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <OpenMPSupport>false</OpenMPSupport>
+      <AdditionalIncludeDirectories>$(IdaSdkDir)\include;./discord-rpc/win64-static/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>$(SolutionDir)$(Platform)\$(Configuration)\ida-rpc64.dll</OutputFile>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
+      <AdditionalDependencies>ida.lib;discord-rpc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>$(IdaSdkLibDir);./discord-rpc/win64-static/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <PreBuildEvent>
+      <Command>autover64.bat</Command>
+      <Message>increment build version, thx zbe &lt;3</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="includes.h" />
+    <ClInclude Include="discord-config.h" />
+    <ClInclude Include="interface.h" />
+    <ClInclude Include="options.h" />
+    <ClInclude Include="utils\build-version\ver.h" />
+    <ClInclude Include="utils\build-version\ver64.h" />
+    <ClInclude Include="utils\lib-utils\discord-utils.h" />
+    <ClInclude Include="utils\lib-utils\ida-utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="options.cpp" />
+  </ItemGroup>
+  <Target Name="ValidateIdaSdk" BeforeTargets="PrepareForBuild" Condition="'$(Configuration)|$(Platform)'=='Release64|x64'">
+    <Error Condition="'$(IdaSdkDir)'=='' Or !Exists('$(IdaSdkDir)\include\ida.hpp')" Text="IDA SDK headers were not found. Set IDA_SDK_DIR to the official IDA SDK src directory, for example C:\ida-sdk\src." />
+    <Error Condition="'$(IdaSdkLibDir)'=='' Or !Exists('$(IdaSdkLibDir)\ida.lib')" Text="IDA SDK ida.lib was not found. For IDA 9.3 use the official SDK lib\x64_win_64 directory." />
+  </Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
