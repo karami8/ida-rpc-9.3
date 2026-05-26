@@ -6,6 +6,8 @@
 #include "utils/lib-utils/ida-utils.h"
 #include "utils/lib-utils/discord-utils.h"
 
+#include <chrono>
+
 #ifdef _Release
 #include "utils/build-version/ver.h"
 #endif
@@ -44,6 +46,7 @@ public:
 
     virtual ~ida_rpc_plugin_t( ) override
     {
+        unregister_presence_timer( );
         unhook_callbacks( );
 
         if ( discord_initialized ) {
@@ -59,6 +62,7 @@ public:
         start_time = time( 0 );
 
         initialize_discord( );
+        register_presence_timer( );
 
         if ( g_options.rpc_enabled && !hook_callbacks( ) ) {
             if ( g_options.output_type >= ( int ) output_type::errors_results_and_interim_steps && g_options.output_enabled ) {
@@ -92,7 +96,9 @@ public:
             update_presence( );
         } else {
             unhook_callbacks( );
-            Discord_ClearPresence( );
+            discord_utils::update_discord_presence( start_time );
+            last_autoanalysis_check_ms = 0;
+            last_autoanalysis_send_ms = 0;
         }
 
         return true;
@@ -165,6 +171,20 @@ public:
     }
 
 private:
+    static int idaapi presence_timer_trampoline( void* ud )
+    {
+        return reinterpret_cast<ida_rpc_plugin_t*>( ud )->on_presence_timer( );
+    }
+
+    int on_presence_timer( )
+    {
+        if ( g_options.rpc_enabled && get_auto_state( ) != AU_NONE ) {
+            update_presence( );
+        }
+
+        return presence_timer_interval_ms;
+    }
+
     bool hook_one( hook_type_t hook_type, event_listener_t* listener, bool& is_hooked, const char* name )
     {
         if ( is_hooked ) {
@@ -218,8 +238,54 @@ private:
 
     void update_presence( )
     {
-        if ( g_options.rpc_enabled ) {
-            discord_utils::update_discord_presence( start_time );
+        if ( !g_options.rpc_enabled ) {
+            return;
+        }
+
+        if ( get_auto_state( ) != AU_NONE ) {
+            const int64_t now_ms = monotonic_time_ms( );
+
+            if ( last_autoanalysis_check_ms != 0
+              && now_ms - last_autoanalysis_check_ms < autoanalysis_check_interval_ms ) {
+                return;
+            }
+
+            last_autoanalysis_check_ms = now_ms;
+
+            if ( last_autoanalysis_send_ms != 0
+              && now_ms - last_autoanalysis_send_ms < autoanalysis_update_interval_ms ) {
+                return;
+            }
+
+            if ( discord_utils::update_discord_presence( start_time, true ) ) {
+                last_autoanalysis_send_ms = now_ms;
+            }
+            return;
+        }
+
+        last_autoanalysis_check_ms = 0;
+        last_autoanalysis_send_ms = 0;
+        discord_utils::update_discord_presence( start_time );
+    }
+
+    static int64_t monotonic_time_ms( )
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>( steady_clock::now( ).time_since_epoch( ) ).count( );
+    }
+
+    void register_presence_timer( )
+    {
+        if ( presence_timer == NULL ) {
+            presence_timer = register_timer( presence_timer_interval_ms, presence_timer_trampoline, this );
+        }
+    }
+
+    void unregister_presence_timer( )
+    {
+        if ( presence_timer != NULL ) {
+            unregister_timer( presence_timer );
+            presence_timer = NULL;
         }
     }
 
@@ -236,8 +302,15 @@ private:
     }
 
 private:
+    static constexpr int presence_timer_interval_ms = 1000;
+    static constexpr int autoanalysis_check_interval_ms = 1000;
+    static constexpr int autoanalysis_update_interval_ms = 1000;
+
     int64_t start_time = 0;
+    int64_t last_autoanalysis_check_ms = 0;
+    int64_t last_autoanalysis_send_ms = 0;
     bool discord_initialized = false;
+    qtimer_t presence_timer = NULL;
 
     rpc_event_listener_t idp_listener;
     rpc_event_listener_t idb_listener;

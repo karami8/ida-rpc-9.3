@@ -4,8 +4,33 @@
 
 namespace discord_utils
 {
+	struct presence_snapshot_t
+	{
+		qstring details;
+		qstring state;
+		qstring large_image_key;
+		qstring large_image_text;
+		qstring small_image_key;
+		qstring small_image_text;
+		int64_t start_timestamp = 0;
+	};
+
 	static const char* presence_text_or_null( const char* value ) {
 		return value != NULL && value[ 0 ] != '\0' ? value : NULL;
+	}
+
+	static qstring presence_text_or_empty( const char* value ) {
+		return value != NULL ? value : "";
+	}
+
+	static bool presence_snapshots_equal( const presence_snapshot_t& lhs, const presence_snapshot_t& rhs ) {
+		return lhs.details == rhs.details
+			&& lhs.state == rhs.state
+			&& lhs.large_image_key == rhs.large_image_key
+			&& lhs.large_image_text == rhs.large_image_text
+			&& lhs.small_image_key == rhs.small_image_key
+			&& lhs.small_image_text == rhs.small_image_text
+			&& lhs.start_timestamp == rhs.start_timestamp;
 	}
 
 	static void handle_discord_ready( ) {
@@ -41,7 +66,10 @@ namespace discord_utils
 		Discord_Initialize( app_id, &handlers, 1, NULL );
 	}
 
-	static void update_discord_presence( int64_t start_time ) {
+	static bool update_discord_presence( int64_t start_time, bool deduplicate = false ) {
+
+		static presence_snapshot_t last_presence;
+		static bool has_last_presence = false;
 
 		if ( g_options.rpc_enabled ) {
 
@@ -95,14 +123,35 @@ namespace discord_utils
 			rpc.smallImageKey = presence_text_or_null( discord_config::small_image_key );
 			rpc.smallImageText = presence_text_or_null( discord_config::small_image_text );
 
+			presence_snapshot_t current_presence;
+			current_presence.details = presence_text_or_empty( rpc.details );
+			current_presence.state = presence_text_or_empty( rpc.state );
+			current_presence.large_image_key = presence_text_or_empty( rpc.largeImageKey );
+			current_presence.large_image_text = presence_text_or_empty( rpc.largeImageText );
+			current_presence.small_image_key = presence_text_or_empty( rpc.smallImageKey );
+			current_presence.small_image_text = presence_text_or_empty( rpc.smallImageText );
+			current_presence.start_timestamp = rpc.startTimestamp;
+
+			if ( deduplicate
+			  && has_last_presence
+			  && presence_snapshots_equal( current_presence, last_presence ) ) {
+				return false;
+			}
+
 			Discord_UpdatePresence( &rpc );
+			last_presence = current_presence;
+			has_last_presence = true;
+			return true;
 		}
 
 		else if ( !g_options.rpc_enabled ) {
 
 			Discord_ClearPresence( );
+			has_last_presence = false;
 
-			return;
+			return true;
 		}
+
+		return false;
 	}
 }
